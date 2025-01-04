@@ -267,11 +267,14 @@ void respond_to_download(const char *current_dir, const char *file_to_download, 
         }
     }
 
-    // printf("\nData send from server to client.\n"); //debug
+     //printf("\nData send from server to client.\n"); //debug
+    const char *end_signal = "END\n"; // Adăugați o linie nouă sau terminator
+    send(client_socket, end_signal, 3, 0);
     fclose(fd);
+    fflush(stdout);
     printf("[server] File sent succesfully");
 
-    send(client_socket, "[server] File downloaded", sizeof("[server] File downloaded"), 0);
+    // send(client_socket, "[server] File downloaded", sizeof("[server] File downloaded"), 0);
 }
 
 void client_handler(int client_socket, int id)
@@ -280,7 +283,7 @@ void client_handler(int client_socket, int id)
     int connected = 0;
     char buff[BUFF_SIZE];
 
-    char *current_directory = "/home/petru10/RC_PROJECT/tema2/server_folder/"; // LOCATIA SERVERULUI
+    char *current_directory = "/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder"; // LOCATIA SERVERULUI
 
     // printf("%s\n", current_directory); // verificare director initial
 
@@ -448,8 +451,12 @@ void client_handler(int client_socket, int id)
         else if(strncmp(command, "download", 8) == 0){
             char file_to_download[BUFF_SIZE];
             sscanf(buff + 9, "%s", file_to_download);
+            // printf("%s\n", file_to_download);
+            send(client_socket, "ready", sizeof("ready"),0);
 
             respond_to_download(current_directory, file_to_download, client_socket);
+
+            send(client_socket, "Download finished", sizeof("Download finished"),0);
             
         }
         else

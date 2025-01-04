@@ -213,7 +213,7 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     printf("File uploaded completed!\n");
 }
 
-void download(const char *file_to_upload,const char *location, int server_socket){
+void download(const char *file_to_upload, int server_socket){
     FILE *fd = fopen(file_to_upload, "wb");
     if(fd == NULL){
         perror("[server] Error creating the file");
@@ -355,11 +355,11 @@ int main(int argc, char *argv[])
                 upload(file_to_upload, location, server_socket);
                 // printf("Am iesit\n"); //
             }
-            if (strncmp(buffer, "download", 8) == 0)
+            else if (strncmp(buffer, "download", 8) == 0)
             {
                 char *path = strtok(buffer, " ");
                 char file_to_upload[BUFFSIZE];
-                char location[BUFFSIZE];
+                // char location[BUFFSIZE];
 
                 // file_to_upload
                 path = strtok(NULL, " ");
@@ -367,21 +367,28 @@ int main(int argc, char *argv[])
                     strcpy(file_to_upload, path);
                 else
                     printf("invalid command");
-                
-
-                // trimit la server "download locatie"
-                char info_server[BUFFSIZE] = "download ";
-                strcat(info_server, location);
-                char ready[BUFFSIZE];
-                send(server_socket, info_server, strlen(info_server), 0);
                 //
 
-                // primesc ready
-                recv(server_socket, ready, sizeof(ready), 0);
-                download(file_to_upload, location, server_socket);
-                // printf("Am iesit\n"); //
+                // locatie
+                // path = strtok(NULL, " ");
+                // if (path != NULL)
+                //     strcpy(location, path);
+                // else
+                //     printf("invalid command");
+                // //
+
+                // trimit la server "upload locatie"
+                char info_server[BUFFSIZE] = "download ";
+                strcat(info_server, file_to_upload);
+                printf("%s\n", info_server);
+                send(server_socket, info_server, strlen(info_server), 0);
+                char trash[BUFFSIZE];
+                recv(server_socket, trash, sizeof(trash),0);
                 
+                download(file_to_upload, server_socket);
+                 printf("Am iesit\n"); //
             }
+            
 
             else if (send(server_socket, buffer, strlen(buffer), 0) < 0)
             {
