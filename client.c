@@ -212,57 +212,56 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     fclose(fd_file);
     printf("File uploaded completed!\n");
 }
-
-void download(const char *file_to_upload, int server_socket){
-    FILE *fd = fopen(file_to_upload, "wb");
+void download(const char *name, int server_socket){
+    FILE *fd=fopen(name,"wb");
     if(fd == NULL){
-        perror("[server] Error creating the file");
+        perror("[client] Error creating the file");
         return;
     }
 
     long file_size;
-    recv(server_socket, &file_size, sizeof(file_size),0);
+    recv(server_socket,&file_size,sizeof(file_size),0);
+    printf("\n%ld\n",file_size);
+    long total_received = 0;
 
-    long total_recieved=0;
-    int end_marker_found=0;
     int bytes_read;
     char buffer[BUFFSIZE];
+    int end_marker_found = 0;
+    int counter = 0;
 
-    while(total_recieved < file_size && (bytes_read = recv(server_socket, buffer, BUFFSIZE, 0))> 0)
-    {
-        total_recieved +=bytes_read;
+    while(total_received < file_size){
+        bytes_read = recv(server_socket, buffer, BUFFSIZE, 0);
 
         char *end_marker = strstr(buffer, "END");
-        
-        if (end_marker)
-        {
-            
-            size_t data_size = end_marker - buffer;
-            if (fwrite(buffer, 1, data_size, fd) != data_size)
-            {
-                perror("[server] Error writing to file");
-                fclose(fd);
-                return;
-            }
 
+        if(end_marker)
+        {
+            size_t data_size = end_marker - buffer;
+            if(fwrite(buffer,1,data_size,fd) != data_size)
+            {
+                perror("[client] Error writing in file");
+                fclose(fd);
+                break;
+            }
+            
             end_marker_found = 1;
-            break;
+            
         }
         else
         {
-            // debug printf("%d\n",counter++);
-            if (fwrite(buffer, 1, bytes_read, fd) != bytes_read)
+            printf("%d\n", counter++);
+            if(fwrite(buffer,1,bytes_read,fd)!=bytes_read)
             {
-                perror("[server] Error writing to file");
+                perror("[client] Error writing in file");
                 fclose(fd);
                 return;
             }
         }
-    }
 
+        total_received += bytes_read;
+    }
     printf("File received\n");
     fclose(fd);
-
 }
 
 extern int errno;
@@ -355,41 +354,43 @@ int main(int argc, char *argv[])
                 upload(file_to_upload, location, server_socket);
                 // printf("Am iesit\n"); //
             }
-            else if (strncmp(buffer, "download", 8) == 0)
-            {
-                char *path = strtok(buffer, " ");
-                char file_to_upload[BUFFSIZE];
-                // char location[BUFFSIZE];
-
-                // file_to_upload
-                path = strtok(NULL, " ");
-                if (path != NULL)
-                    strcpy(file_to_upload, path);
-                else
-                    printf("invalid command");
-                //
-
-                // locatie
-                // path = strtok(NULL, " ");
-                // if (path != NULL)
-                //     strcpy(location, path);
-                // else
-                //     printf("invalid command");
-                // //
-
-                // trimit la server "upload locatie"
-                char info_server[BUFFSIZE] = "download ";
-                strcat(info_server, file_to_upload);
-                printf("%s\n", info_server);
-                send(server_socket, info_server, strlen(info_server), 0);
-                char trash[BUFFSIZE];
-                recv(server_socket, trash, sizeof(trash),0);
+            else if (strncmp(buffer, "download", 8) == 0){
+                char* path = strtok(buffer, " ");
+                char file_to_download[BUFFSIZE];
+                char new_file_name[BUFFSIZE];
                 
-                download(file_to_upload, server_socket);
-                 printf("Am iesit\n"); //
-            }
-            
+                if(path !=NULL)
+                    strcpy(file_to_download, path);
+                else
+                    perror("invalid command");
+                
+                printf("\n%s\n",file_to_download);
 
+                path = strtok(NULL," ");
+
+                if(path != NULL)
+                    strcpy(file_to_download, path);
+                else
+                    perror("invalid command");
+                printf("\n%s\n",new_file_name);
+
+                path = strtok(NULL," ");
+
+                if(path != NULL)
+                    strcpy(new_file_name, path);
+                else
+                    perror("invalid command");
+                printf("\n%s\n",new_file_name);
+                
+                char command_argument[BUFFSIZE] = "download ";
+                strcat(command_argument, file_to_download);
+                send(server_socket, command_argument,strlen(command_argument), 0);
+
+                printf("Downloading..\n");
+                download(new_file_name, server_socket);
+                 
+            }
+        
             else if (send(server_socket, buffer, strlen(buffer), 0) < 0)
             {
                 perror("[client] Error sending the command");

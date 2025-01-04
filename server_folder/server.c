@@ -239,42 +239,39 @@ int account_verify(const char *username, const char *password)
     return 0;
 }
 
-//respond_to_download(current_directory, file_to_download, client_socket);
-
-void respond_to_download(const char *current_dir, const char *file_to_download, int client_socket){
-    FILE *fd = fopen(file_to_download, "rb");
-    if (fd == NULL)
+// respond_to_download(file_to_download, client_socket);
+respond_to_download(const char *file_name,int client_socket){
+    FILE *fd_file = fopen(file_name,"rb");
+    if (fd_file == NULL)
     {
-        perror("[server] Error opening the file");
+        perror("Can't open the file_to_upload");
         return;
     }
 
-    fseek(fd, 0, SEEK_END);
-    long file_size = ftell(fd);
-    rewind(fd);
+    fseek(fd_file, 0, SEEK_END);
+    long file_size = ftell(fd_file); //pozitia cursorului
+    rewind(fd_file);// reseteaza pozitita cursorului
 
     send(client_socket, &file_size, sizeof(file_size), 0);
 
     int bytes_read;
     char buffer[BUFF_SIZE];
 
-    while ((bytes_read = fread(buffer, 1, BUFF_SIZE, fd)) > 0)
-    {
-        if(send(client_socket, buffer, bytes_read, 0) < 0){
-            perror("[server] Error sending to client");
-            fclose(fd);
+    while((bytes_read = fread(buffer,1,BUFF_SIZE,fd_file))>0){
+        if(send(client_socket, buffer, bytes_read, 0)<0){
+            perror("Error sending to server");
+            fclose(fd_file);
             return;
         }
     }
 
-     //printf("\nData send from server to client.\n"); //debug
-    const char *end_signal = "END\n"; // Adăugați o linie nouă sau terminator
-    send(client_socket, end_signal, 3, 0);
-    fclose(fd);
-    fflush(stdout);
-    printf("[server] File sent succesfully");
+    printf("\nAll data had been sent\n");
 
-    // send(client_socket, "[server] File downloaded", sizeof("[server] File downloaded"), 0);
+    const char *end_signal = "END\n";
+    send(client_socket, end_signal, 3,0);
+
+    fclose(fd_file);
+    printf("[server] File sent complete\n");
 }
 
 void client_handler(int client_socket, int id)
@@ -306,7 +303,8 @@ void client_handler(int client_socket, int id)
         send(client_socket, "[server] Failed to connect! Account not found!", strlen("[server] Failed to connect! Account not found!"), 0);
     
     while (connected)
-    {
+    {   
+        printf(".\n");
         memset(buff, 0, BUFF_SIZE);
         int bytes_recieved = recv(client_socket, buff, BUFF_SIZE - 1, 0);
         buff[bytes_recieved] = '\0';
@@ -448,16 +446,14 @@ void client_handler(int client_socket, int id)
             send(client_socket, output, sizeof(output), 0);
             
         }
-        else if(strncmp(command, "download", 8) == 0){
+        else if(strncmp(command,"download",8) == 0)
+        {
             char file_to_download[BUFF_SIZE];
-            sscanf(buff + 9, "%s", file_to_download);
-            // printf("%s\n", file_to_download);
-            send(client_socket, "ready", sizeof("ready"),0);
+            sscanf(command + 9, "%s", file_to_download);
+            printf("\n%s\n", file_to_download);
+            respond_to_download(file_to_download, client_socket);
 
-            respond_to_download(current_directory, file_to_download, client_socket);
-
-            send(client_socket, "Download finished", sizeof("Download finished"),0);
-            
+            send(client_socket,"Download finished!",strlen("Download finished!"),0);
         }
         else
             send(client_socket, "[server]Unknown command", strlen("[server]Unknown command"), 0);
