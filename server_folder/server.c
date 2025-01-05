@@ -17,75 +17,19 @@
 
 extern int errno;
 
-struct account
-{
+struct account{
     char username[100];
     char password[100];
 };
 
-void recieve_file(const char *name, int client_socket)
-{
-    FILE *fd = fopen(name, "wb");
-    if (fd == NULL)
-    {
-        perror("[server] Error creating the file");
-        return;
-    }
+void decrypt(char pass[100]){
 
-    // dimensiunea fisierului
-    long file_size;
-    recv(client_socket, &file_size, sizeof(file_size), 0);
-    printf("%ld", file_size);
-    long total_received = 0;
-
-    int bytes_read;
-    char buffer[BUFF_SIZE];
-    int end_marker_found = 0;
-    // int counter = 0;  //debug
-
-    while (total_received < file_size && (bytes_read = recv(client_socket, buffer, BUFF_SIZE, 0)) > 0)
-    {
-        total_received += bytes_read;
-
-        char *end_marker = strstr(buffer, "END");
-
-        if (end_marker)
-        {
-            size_t data_size = end_marker - buffer;
-            if (fwrite(buffer, 1, data_size, fd) != data_size)
-            {
-                perror("[server] Error writing to file");
-                fclose(fd);
-                return;
-            }
-
-            end_marker_found = 1;
-            break;
-        }
-        else
-        {
-            // printf("%d\n",counter++);  //debug
-            if (fwrite(buffer, 1, bytes_read, fd) != bytes_read)
-            {
-                perror("[server] Error writing to file");
-                fclose(fd);
-                return;
-            }
-        }
-    }
-
-    printf("[server] File received\n");
-    fclose(fd);
-}
-
-void decrypt(char pass[100])
-{
     char a;
     int i = 0;
     int n = strlen(pass);
 
-    while (i < n)
-    {
+    while (i < n){
+    
         switch (pass[i])
         {
         case '%':
@@ -214,12 +158,12 @@ void decrypt(char pass[100])
     }
 }
 
-int account_verify(const char *username, const char *password)
-{
+int account_verify(const char *username, const char *password){
+
     FILE *file = fopen("whitelist.txt", "r");
-    if (file == NULL)
-    {
-        perror("[server] Error opening whitelist");
+    if (file == NULL){
+
+        perror("Error opening whitelist");
         return 0;
     }
 
@@ -227,62 +171,112 @@ int account_verify(const char *username, const char *password)
     char file_password[50];
 
     while (fscanf(file, "%s %s", file_username, file_password) != EOF)
-    {
-        if (strcmp(username, file_username) == 0 && strcmp(password, file_password) == 0)
-        {
+        if (strcmp(username, file_username) == 0 && strcmp(password, file_password) == 0){
+        
             fclose(file);
             return 1;
         }
-    }
+    
     fclose(file);
     return 0;
 }
 
-// respond_to_download(file_to_download, client_socket);
-void respond_to_download(const char *file_name, int client_socket)
-{
-    FILE *fd_file = fopen(file_name, "rb");
-    if (fd_file == NULL)
+//  recieve_file(name, client_socket);
+
+void recieve_file(const char *name, int client_socket){
+
+    FILE *fd = fopen(name, "wb");
+    if (fd == NULL)
     {
+        perror("Error creating the file");
+        return;
+    }
+
+    // dimensiunea fisierului
+    long file_size;
+    recv(client_socket, &file_size, sizeof(file_size), 0);
+    printf("%ld", file_size);
+    long total_received = 0;
+
+    int bytes_read;
+    char buffer[BUFF_SIZE];
+    int end_marker_found = 0;
+    // int counter = 0;  //debug
+
+    while (total_received < file_size && (bytes_read = recv(client_socket, buffer, BUFF_SIZE, 0)) > 0){
+    
+        total_received += bytes_read;
+
+        char *end_marker = strstr(buffer, "END");
+
+        if (end_marker){
+        
+            size_t data_size = end_marker - buffer;
+            if (fwrite(buffer, 1, data_size, fd) != data_size)
+            {
+                perror("Error writing to file");
+                fclose(fd);
+                return;
+            }
+
+            end_marker_found = 1;
+            break;
+        }
+        else{
+            // printf("%d\n",counter++);  //debug
+            if (fwrite(buffer, 1, bytes_read, fd) != bytes_read)
+            {
+                perror("Error writing to file");
+                fclose(fd);
+                return;
+            }
+        }
+    }
+
+    printf("[server] File received\n");
+    fclose(fd);
+}
+
+// respond_to_download(file_to_download, client_socket);
+
+void respond_to_download(const char *file_name, int client_socket){
+
+    FILE *fd_file = fopen(file_name, "rb");
+    if (fd_file == NULL){
+    
         perror("Can't open the file_to_upload");
-        const char *error_msg = "[server] Error: File not found\n";
-        send(client_socket, error_msg, strlen(error_msg), 0);
+        
+        send(client_socket, "[server] Error: File not found\n", strlen("[server] Error: File not found\n"), 0);
         return;
     }
 
     fseek(fd_file, 0, SEEK_END);
-    long file_size = ftell(fd_file); // Get file size
-    rewind(fd_file);                 // Reset cursor position
+    long file_size = ftell(fd_file); 
+    rewind(fd_file);                 
 
-    // Send file size to the client
     send(client_socket, &file_size, sizeof(file_size), 0);
 
     char buffer[BUFF_SIZE];
     int bytes_read;
 
     while ((bytes_read = fread(buffer, 1, BUFF_SIZE, fd_file)) > 0)
-    {
-        if (send(client_socket, buffer, bytes_read, 0) < 0)
-        {
-            perror("[server] Error sending file data");
+        if (send(client_socket, buffer, bytes_read, 0) < 0){
+        
+            perror("Error sending file data");
             fclose(fd_file);
             return;
         }
-    }
 
     fclose(fd_file);
-    printf("[server] All data has been sent\n");
+    printf("[server] All data sent\n");
 
-    // Send a separate confirmation message after file transfer
-    // const char *end_message = "[server] Download completed\n";
-    // send(client_socket, end_message, strlen(end_message), 0);
     printf("[server] File sent successfully\n");
     char bin[BUFF_SIZE];
     int n = recv(client_socket, bin, sizeof(bin), 0);
 }
 
-void client_handler(int client_socket, int id)
-{
+void client_handler(int client_socket, int id){
+
     struct account acc;
     int connected = 0;
     char buff[BUFF_SIZE];
@@ -291,17 +285,17 @@ void client_handler(int client_socket, int id)
 
     // printf("%s\n", current_directory); // verificare director initial
 
-    if (recv(client_socket, &acc, sizeof(acc), 0) <= 0)
-    {
-        perror("[server] Error recieving account info from client");
+    if (recv(client_socket, &acc, sizeof(acc), 0) <= 0){
+    
+        perror("Error recieving account info from client");
         close(client_socket);
         return;
     }
 
     decrypt(acc.password);
 
-    if (account_verify(acc.username, acc.password))
-    {
+    if (account_verify(acc.username, acc.password)){
+    
         send(client_socket, "[server] Account found! Connected!", strlen("[server] Account found! Connected!"), 0);
         printf("[server] Account with ID: %d logged in\n", id);
         connected = 1;
@@ -309,8 +303,8 @@ void client_handler(int client_socket, int id)
     else
         send(client_socket, "[server] Failed to connect! Account not found!", strlen("[server] Failed to connect! Account not found!"), 0);
 
-    while (connected)
-    {
+    while (connected){
+    
         memset(buff, 0, BUFF_SIZE);
         int bytes_recieved = recv(client_socket, buff, BUFF_SIZE - 1, 0);
         buff[bytes_recieved] = '\0';
@@ -318,15 +312,15 @@ void client_handler(int client_socket, int id)
         char command[BUFF_SIZE];
         strcpy(command, buff);
 
-        if (strncmp(buff, "exit", 4) == 0)
-        {
+        if (strncmp(buff, "exit", 4) == 0){
+        
             send(client_socket, "[server] Goodbye!\n", strlen("[server] Goodbye!\n"), 0);
             close(client_socket);
             connected = 0;
         }
 
-        else if (strncmp(command, "mkdir", 5) == 0)
-        {
+        else if (strncmp(command, "mkdir", 5) == 0){
+        
             char directory_name[BUFF_SIZE];
             sscanf(buff + 6, "%s", directory_name);
 
@@ -336,8 +330,8 @@ void client_handler(int client_socket, int id)
                 send(client_socket, "[server]Failed to create directory", strlen("[server]Failed to create directory"), 0);
         }
 
-        else if (strncmp(command, "rename", 6) == 0)
-        {
+        else if (strncmp(command, "rename", 6) == 0){
+        
             char old_name[BUFF_SIZE], new_name[BUFF_SIZE];
             sscanf(buff + 7, "%s %s", old_name, new_name);
 
@@ -346,21 +340,21 @@ void client_handler(int client_socket, int id)
             else
                 send(client_socket, "[server]Failed to rename the specified file", strlen("[server]Failed to rename the specified file"), 0);
         }
-        else if (strncmp(command, "delete", 6) == 0)
-        {
+        else if (strncmp(command, "delete", 6) == 0){
+        
             char file_to_delete[BUFF_SIZE];
             sscanf(buff + 7, "%s", file_to_delete);
 
             if (strncmp(file_to_delete, "server", 6) != 0 && strncmp(file_to_delete, "client", 6) != 0 && strncmp(file_to_delete, "whitelist", 9) != 0)
                 if (remove(file_to_delete) == 0)
-                    send(client_socket, "File deleted!", strlen("File deleted!"), 0);
+                    send(client_socket, "[server] File deleted!", strlen("File deleted!"), 0);
                 else
-                    send(client_socket, "Can't delete the file", strlen("Can't delete the file"), 0);
+                    send(client_socket, "[server] Can't delete the file", strlen("Can't delete the file"), 0);
             else
-                send(client_socket, "Termina", strlen("Termina"), 0);
+                send(client_socket, "[server] You are not allowed to perform that kind of action", strlen("[server] You are not allowed to perform that kind of action"), 0);
         }
-        else if (strncmp(command, "help", 4) == 0)
-        {
+        else if (strncmp(command, "help", 4) == 0){
+        
             const char *help =
                 "\n[server] Available command list:\n"
                 "\n"
@@ -379,58 +373,60 @@ void client_handler(int client_socket, int id)
                 " > upload <path> <file_name> :\n"
                 "    - Uploads in the current working directory, the file <path> and saves it as <file_name>.\n"
                 "    - The current working directory is the one returned by 'currentdir' command.\n"
-                " > download <file_name> :\n"
-                "    - Downloads the file specified by <file_name> from the server.\n";
+                " > download <file_name> <new_name>:\n"
+                "    - Downloads the file specified by <file_name> from the server and saves it as <new_name>.\n";
 
             send(client_socket, help, strlen(help), 0);
         }
 
-        else if (strncmp(command, "cd", 2) == 0)
-        {
+        else if (strncmp(command, "cd", 2) == 0){
+        
             char new_location[BUFF_SIZE];
             sscanf(buff + 3, "%s", new_location);
+            
             int ok = 0; // daca argumentul nu este ..
-            if (strncmp(new_location, "..", 2) == 0)
-            {
+
+            if (strncmp(new_location, "..", 2) == 0){
+            
                 ok = 1;
-                if (chdir("..") == 0)
-                {
+                if (chdir("..") == 0){
+                
                     char cwd[1024];
                     if (getcwd(cwd, sizeof(cwd)) != NULL)
                         send(client_socket, cwd, 100, 0);
                 }
             }
 
-            if (ok == 0) // daca argumentul nu este .., atunci inseamna ca e posibil sa avem un path
-            {
-                if (chdir(new_location) == 0)
-                {
+            if (ok == 0){ // daca argumentul nu este .., atunci inseamna ca e posibil sa avem un path
+            
+                if (chdir(new_location) == 0){
+                
                     // debug printf("am intrat in if\n");
                     send(client_socket, "[server] Directory changed", sizeof("[server] Directory changed"), 0);
                 }
-                else
-                {
+                else{
+
                     // debug printf("Nu am intrat in if\n");
                     send(client_socket, "[server] Cannot change directory", sizeof("[server] Cannot change directory"), 0);
                 }
                 ok = 0; // refresh
             }
         }
-        else if (strncmp(command, "currentdir", 11) == 0)
-        {
+        else if (strncmp(command, "currentdir", 11) == 0){
+        
             char cwd[1024];
             if (getcwd(cwd, sizeof(cwd)) != NULL)
                 send(client_socket, cwd, 100, 0);
         }
-        else if (strncmp(command, "list", 5) == 0)
-        {
+        else if (strncmp(command, "list", 5) == 0){
+        
             char output[BUFF_SIZE];
             struct dirent *entry;
             DIR *dir = opendir(".");
             memset(output, 0, BUFF_SIZE);
 
-            while ((entry = readdir(dir)) != NULL)
-            {
+            while ((entry = readdir(dir)) != NULL){
+            
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) // excludem intrarile implicite ce reprezinta directorul curent si cel parinte
                     continue;
 
@@ -440,8 +436,8 @@ void client_handler(int client_socket, int id)
             closedir(dir);
             send(client_socket, output, sizeof(output), 0);
         }
-        else if (strncmp(command, "upload", 6) == 0)
-        {
+        else if (strncmp(command, "upload", 6) == 0){
+        
             char name[BUFF_SIZE];
             sscanf(command + 7, "%s", name);
 
@@ -451,19 +447,17 @@ void client_handler(int client_socket, int id)
             // printf("dupa recieve_file\n");
             send(client_socket, "[server] File received", strlen("[server] File received"), 0);
         }
-        else if (strncmp(command, "download", 8) == 0)
-        {
+        else if (strncmp(command, "download", 8) == 0){
+        
             char file_to_download[BUFF_SIZE];
             sscanf(command + 9, "%s", file_to_download);
-            printf("[server] The client with ID:%d requested to download the file: %s", id, file_to_download);
+
+            printf("[server] The client with ID:%d requested to download the file: %s\n", id, file_to_download);
+            
             respond_to_download(file_to_download, client_socket);
+            
             send(client_socket, "[server] The file you requested was successfully downloaded", strlen("[server] The file you requested was successfully downloaded"), 0);
 
-            char bin[BUFF_SIZE];
-        }
-        else if (strncmp(command, "finish", 6) == 0)
-        {
-            send(client_socket, "[server] The file you requested was successfully downloaded", strlen("[server] The file you requested was successfully downloaded"), 0);
         }
         else
             send(client_socket, "[server]Unknown command", strlen("[server]Unknown command"), 0);
@@ -471,8 +465,8 @@ void client_handler(int client_socket, int id)
     close(client_socket);
 }
 
-int main()
-{
+int main(){
+
     struct sockaddr_in server;
     struct sockaddr_in client;
     int server_socket;
@@ -481,9 +475,9 @@ int main()
     int connected = 0;
     int id = 0;
 
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        perror("[server]Error command socket().\n");
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+
+        perror("Error command socket().\n");
         return errno;
     }
 
@@ -491,20 +485,19 @@ int main()
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT);
 
-    if (bind(server_socket, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
-    {
-        perror("[server]Error command bind().\n");
+    if (bind(server_socket, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1){
+
+        perror("Error command bind().\n");
         return errno;
     }
 
-    if (listen(server_socket, 5) == -1)
-    {
-        perror("[server]Error command listen().\n");
+    if (listen(server_socket, 5) == -1){
+
+        perror("Error command listen().\n");
         return errno;
     }
 
-    while (1)
-    {
+    while (1){
         printf("[server] Listening on port %d... \n", PORT);
         fd_set read_fds;
         FD_ZERO(&read_fds);
@@ -513,9 +506,9 @@ int main()
 
         client_socket = accept(server_socket, (struct sockaddr *)&client, &client_length);
 
-        if (client_socket < 0)
-        {
-            perror("[server] accept() failed.\n");
+        if (client_socket < 0){
+
+            perror("accept() failed.\n");
             continue;
         }
 
@@ -524,24 +517,21 @@ int main()
         printf("[server] Client reached! Recieved ID: %d\n", id);
 
         int pid = fork();
-        if (pid < 0)
-        {
-            perror("[server] fork() failed");
+        if (pid < 0){
+
+            perror("fork() failed");
             close(client_socket);
             continue;
         }
 
-        if (pid == 0)
-        {
+        if (pid == 0){
 
             close(server_socket);
             client_handler(client_socket, id);
             exit(0);
         }
         else
-        {
             close(client_socket);
-        }
     }
 
     close(server_socket);
