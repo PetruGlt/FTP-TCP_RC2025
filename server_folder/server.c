@@ -311,7 +311,9 @@ void client_handler(int client_socket, int id)
 
     if (account_verify(acc.username, acc.password))
     {
-
+        chdir("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025");
+        mkdir(acc.username, 0777);
+        chdir("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder");
         send(client_socket, "[server] Account found! Connected!", strlen("[server] Account found! Connected!"), 0);
         printf("[server] Account with ID: %d logged in\n", id);
         connected = 1;
@@ -360,8 +362,8 @@ void client_handler(int client_socket, int id)
                     send(client_socket, "[server]File renamed successfully", strlen("[server]File renamed successfully"), 0);
                 else
                     send(client_socket, "[server]Failed to rename the specified file", strlen("[server]Failed to rename the specified file"), 0);
-            else send(client_socket, "\n[server] You are not allowed to do that\n", strlen("\n[server] You are not allowed to do that\n"), 0);
-
+            else
+                send(client_socket, "\n[server] You are not allowed to do that\n", strlen("\n[server] You are not allowed to do that\n"), 0);
         }
         else if (strncmp(command, "delete", 6) == 0)
         {
@@ -475,12 +477,13 @@ void client_handler(int client_socket, int id)
 
             char name[BUFF_SIZE];
             sscanf(command + 7, "%s", name);
-            if (strncmp(name, "server", 6) != 0 && strncmp(name, "client", 6) != 0 && strncmp(name, "whitelist", 9) != 0){
-            send(client_socket, "[server] Ready to receive", strlen("[server] Ready to receive"), 0);
-            // printf("inainte de recieve_file\n");
-            recieve_file(name, client_socket);
-            // printf("dupa recieve_file\n");
-            send(client_socket, "[server] File received", strlen("[server] File received"), 0);
+            if (strncmp(name, "server", 6) != 0 && strncmp(name, "client", 6) != 0 && strncmp(name, "whitelist", 9) != 0)
+            {
+                send(client_socket, "[server] Ready to receive", strlen("[server] Ready to receive"), 0);
+                // printf("inainte de recieve_file\n");
+                recieve_file(name, client_socket);
+                // printf("dupa recieve_file\n");
+                send(client_socket, "[server] File received", strlen("[server] File received"), 0);
             }
         }
         else if (strncmp(command, "download", 8) == 0)

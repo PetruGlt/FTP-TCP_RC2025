@@ -22,6 +22,8 @@ struct account
     char password[100];
 };
 
+struct account copy;
+
 void encrypt(char pass[100])
 {
 
@@ -177,6 +179,7 @@ void connect_account(int server_socket)
     fgets(acc.password, sizeof(acc.password), stdin);
     acc.password[strcspn(acc.password, "\n")] = 0;
 
+    strcpy(copy.username, acc.username);
     encrypt(acc.password);
     send(server_socket, &acc, sizeof(acc), 0);
 };
@@ -282,7 +285,6 @@ int main(int argc, char *argv[])
 
     int server_socket;
     struct sockaddr_in server;
-    struct account acc;
     char buff[BUFFSIZE];
 
     if (argc != 3)
@@ -309,7 +311,7 @@ int main(int argc, char *argv[])
         perror("Error command connect().\n");
         return errno;
     }
-
+   
     connect_account(server_socket);
 
     char status_account[BUFFSIZE];
@@ -321,7 +323,13 @@ int main(int argc, char *argv[])
         printf("%s\n", status_account);
     }
     if (strcmp(status_account, "[server] Account found! Connected!") == 0)
-    {
+    {   
+        char dir[BUFFSIZE]="/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025";
+
+        if(chdir(copy.username) !=0){
+            perror("Can't change dir");
+        }
+
         while (1)
         {
             char buffer[BUFFSIZE];
@@ -399,7 +407,7 @@ int main(int argc, char *argv[])
                     perror("invalid command");
 
                 char command_argument[BUFFSIZE] = "download ";
-                printf("\n%s\n", file_to_download);
+                // printf("\n%s\n", file_to_download);
                 strcat(command_argument, file_to_download);
                 send(server_socket, command_argument, strlen(command_argument), 0);
                 if (strncmp(file_to_download, "server", 6) != 0 && strncmp(file_to_download, "client", 6) != 0 && strncmp(file_to_download, "whitelist", 9) != 0)
@@ -407,7 +415,7 @@ int main(int argc, char *argv[])
 
                     printf("\nDownloading..\n");
                     download(new_file_name, server_socket);
-                    printf("I'm out\n");
+                    // printf("I'm out\n");
                     send(server_socket, "finish", strlen("finish"), 0);
                 }
                 else
