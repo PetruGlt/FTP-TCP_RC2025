@@ -212,55 +212,64 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     fclose(fd_file);
     printf("File uploaded completed!\n");
 }
-void download(const char *name, int server_socket){
-    FILE *fd=fopen(name,"wb");
-    if(fd == NULL){
+void download(const char *name, int server_socket) {
+    FILE *fd = fopen(name, "wb");
+    if (fd == NULL) {
         perror("[client] Error creating the file");
         return;
     }
 
     long file_size;
-    recv(server_socket,&file_size,sizeof(file_size),0);
+    if (recv(server_socket, &file_size, sizeof(file_size), 0) <= 0) {
+        perror("[client] Error receiving file size");
+        fclose(fd);
+        return;
+    }
+
+    printf("[client] File size to receive: %ld bytes\n", file_size);
 
     long total_received = 0;
-
-    int bytes_read;
     char buffer[BUFFSIZE];
-    int end_marker_found = 0;
-    int counter = 0;
+    int bytes_read;
 
-    while(total_received < file_size){
+    while (total_received < file_size) {
         bytes_read = recv(server_socket, buffer, BUFFSIZE, 0);
-
-        char *end_marker = strstr(buffer, "END");
-
-        if(end_marker)
-        {
-            size_t data_size = end_marker - buffer;
-            if(fwrite(buffer,1,data_size,fd) != data_size)
-            {
-                perror("[client] Error writing in file");
-                fclose(fd);
-                break;
-            }
-            
-            end_marker_found = 1;
-            
+        if (bytes_read <= 0) {
+            perror("[client] Error receiving file data");
+            fclose(fd);
+            return;
         }
-        else
-        {
-            if(fwrite(buffer,1,bytes_read,fd)!=bytes_read)
-            {
-                perror("[client] Error writing in file");
-                fclose(fd);
-                return;
-            }
+
+        long bytes_to_write = bytes_read;
+
+        // If receiving more than the remaining file size, adjust
+        if (total_received + bytes_read > file_size) {
+            bytes_to_write = file_size - total_received;
         }
+
+        if (fwrite(buffer, 1, bytes_to_write, fd) != bytes_to_write) {
+            perror("[client] Error writing to file");
+            fclose(fd);
+            return;
+        }
+
+        total_received += bytes_to_write;
     }
-    printf("File received\n");
+
+    printf("[client] File download completed (%ld/%ld bytes)\n", total_received, file_size);
     fclose(fd);
-    
+
+    // // Receive and print the server's final message
+    // char end_message[BUFFSIZE];
+    // int n = recv(server_socket, end_message, BUFFSIZE, 0);
+    // if (n > 0) {
+    //     end_message[n] = '\0';
+    //     printf("[client] Server: %s", end_message);
+    // }
 }
+
+
+
 
 extern int errno;
 
@@ -383,6 +392,8 @@ int main(int argc, char *argv[])
 
                 printf("\nDownloading..\n");
                 download(new_file_name, server_socket);
+                printf("I'm out\n");
+                send(server_socket, "finish", strlen("finish"),0);
                  
             }
         
