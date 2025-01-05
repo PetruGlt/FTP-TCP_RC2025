@@ -190,7 +190,7 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     rewind(fd_file);// reseteaza pozitita cursorului
 
     send(server_socket, &file_size, sizeof(file_size), 0);
-
+    
     int bytes_read;
     char buffer[BUFFSIZE];
     // trimit
@@ -221,7 +221,7 @@ void download(const char *name, int server_socket){
 
     long file_size;
     recv(server_socket,&file_size,sizeof(file_size),0);
-    printf("\n%ld\n",file_size);
+
     long total_received = 0;
 
     int bytes_read;
@@ -249,7 +249,6 @@ void download(const char *name, int server_socket){
         }
         else
         {
-            printf("%d\n", counter++);
             if(fwrite(buffer,1,bytes_read,fd)!=bytes_read)
             {
                 perror("[client] Error writing in file");
@@ -257,11 +256,10 @@ void download(const char *name, int server_socket){
                 return;
             }
         }
-
-        total_received += bytes_read;
     }
     printf("File received\n");
     fclose(fd);
+    
 }
 
 extern int errno;
@@ -364,7 +362,6 @@ int main(int argc, char *argv[])
                 else
                     perror("invalid command");
                 
-                printf("\n%s\n",file_to_download);
 
                 path = strtok(NULL," ");
 
@@ -372,7 +369,6 @@ int main(int argc, char *argv[])
                     strcpy(file_to_download, path);
                 else
                     perror("invalid command");
-                printf("\n%s\n",new_file_name);
 
                 path = strtok(NULL," ");
 
@@ -380,13 +376,12 @@ int main(int argc, char *argv[])
                     strcpy(new_file_name, path);
                 else
                     perror("invalid command");
-                printf("\n%s\n",new_file_name);
                 
                 char command_argument[BUFFSIZE] = "download ";
                 strcat(command_argument, file_to_download);
                 send(server_socket, command_argument,strlen(command_argument), 0);
 
-                printf("Downloading..\n");
+                printf("\nDownloading..\n");
                 download(new_file_name, server_socket);
                  
             }
@@ -397,8 +392,9 @@ int main(int argc, char *argv[])
                 break;
             }
 
+       
             int n = recv(server_socket, buffer, BUFFSIZE, 0); // File received msg from [server]
-
+           
             buffer[n] = '\0';
             printf("%s", buffer);
             printf("\n\n");

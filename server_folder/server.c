@@ -35,7 +35,7 @@ void recieve_file(const char *name, int client_socket)
     // dimensiunea fisierului 
     long file_size;
     recv(client_socket, &file_size, sizeof(file_size), 0);
-
+    printf("%ld", file_size);
     long total_received = 0;
 
     int bytes_read;
@@ -240,7 +240,7 @@ int account_verify(const char *username, const char *password)
 }
 
 // respond_to_download(file_to_download, client_socket);
-respond_to_download(const char *file_name,int client_socket){
+void respond_to_download(const char *file_name,int client_socket){
     FILE *fd_file = fopen(file_name,"rb");
     if (fd_file == NULL)
     {
@@ -304,7 +304,6 @@ void client_handler(int client_socket, int id)
     
     while (connected)
     {   
-        printf(".\n");
         memset(buff, 0, BUFF_SIZE);
         int bytes_recieved = recv(client_socket, buff, BUFF_SIZE - 1, 0);
         buff[bytes_recieved] = '\0';
@@ -379,17 +378,7 @@ void client_handler(int client_socket, int id)
             send(client_socket, help, strlen(help), 0);
         }
 
-        else if (strncmp(command, "upload", 6) == 0)
-        {
-            char name[BUFF_SIZE];
-            sscanf(command + 7, "%s", name);
-
-            send(client_socket, "[server] Ready to receive", strlen("[server] Ready to receive"), 0);
-            //printf("inainte de recieve_file\n");
-            recieve_file(name, client_socket);
-            //printf("dupa recieve_file\n");
-            send(client_socket, "[server] File received", strlen("[server] File received"), 0);
-        }
+       
         else if (strncmp(command, "cd", 2) == 0)
         {
             char new_location[BUFF_SIZE];
@@ -446,14 +435,26 @@ void client_handler(int client_socket, int id)
             send(client_socket, output, sizeof(output), 0);
             
         }
+         else if (strncmp(command, "upload", 6) == 0)
+        {
+            char name[BUFF_SIZE];
+            sscanf(command + 7, "%s", name);
+
+            send(client_socket, "[server] Ready to receive", strlen("[server] Ready to receive"), 0);
+            //printf("inainte de recieve_file\n");
+            recieve_file(name, client_socket);
+            //printf("dupa recieve_file\n");
+            send(client_socket, "[server] File received", strlen("[server] File received"), 0);
+        }
         else if(strncmp(command,"download",8) == 0)
         {
             char file_to_download[BUFF_SIZE];
             sscanf(command + 9, "%s", file_to_download);
-            printf("\n%s\n", file_to_download);
+            printf("[server] The client with ID:%d requested to download the file: %s", id, file_to_download);
             respond_to_download(file_to_download, client_socket);
+            
+            send(client_socket,"[server] Download completed",strlen("[server] Download completed"),0);
 
-            send(client_socket,"Download finished!",strlen("Download finished!"),0);
         }
         else
             send(client_socket, "[server]Unknown command", strlen("[server]Unknown command"), 0);

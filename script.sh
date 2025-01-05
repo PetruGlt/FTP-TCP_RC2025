@@ -33,3 +33,4 @@ fi
 xprocesator/procesator.sh "$1"
 
 exit #?
+[server] Download completed
