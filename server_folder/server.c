@@ -32,7 +32,7 @@ void recieve_file(const char *name, int client_socket)
         return;
     }
 
-    // dimensiunea fisierului 
+    // dimensiunea fisierului
     long file_size;
     recv(client_socket, &file_size, sizeof(file_size), 0);
     printf("%ld", file_size);
@@ -48,7 +48,7 @@ void recieve_file(const char *name, int client_socket)
         total_received += bytes_read;
 
         char *end_marker = strstr(buffer, "END");
-        
+
         if (end_marker)
         {
             size_t data_size = end_marker - buffer;
@@ -76,7 +76,6 @@ void recieve_file(const char *name, int client_socket)
 
     printf("[server] File received\n");
     fclose(fd);
-
 }
 
 void decrypt(char pass[100])
@@ -240,39 +239,43 @@ int account_verify(const char *username, const char *password)
 }
 
 // respond_to_download(file_to_download, client_socket);
-void respond_to_download(const char *file_name,int client_socket){
-    FILE *fd_file = fopen(file_name,"rb");
-    if (fd_file == NULL)
-    {
+void respond_to_download(const char *file_name, int client_socket) {
+    FILE *fd_file = fopen(file_name, "rb");
+    if (fd_file == NULL) {
         perror("Can't open the file_to_upload");
+        const char *error_msg = "[server] Error: File not found\n";
+        send(client_socket, error_msg, strlen(error_msg), 0);
         return;
     }
 
     fseek(fd_file, 0, SEEK_END);
-    long file_size = ftell(fd_file); //pozitia cursorului
-    rewind(fd_file);// reseteaza pozitita cursorului
+    long file_size = ftell(fd_file); // Get file size
+    rewind(fd_file); // Reset cursor position
 
+    // Send file size to the client
     send(client_socket, &file_size, sizeof(file_size), 0);
 
-    int bytes_read;
     char buffer[BUFF_SIZE];
+    int bytes_read;
 
-    while((bytes_read = fread(buffer,1,BUFF_SIZE,fd_file))>0){
-        if(send(client_socket, buffer, bytes_read, 0)<0){
-            perror("Error sending to server");
+    while ((bytes_read = fread(buffer, 1, BUFF_SIZE, fd_file)) > 0) {
+        if (send(client_socket, buffer, bytes_read, 0) < 0) {
+            perror("[server] Error sending file data");
             fclose(fd_file);
             return;
         }
     }
 
-    printf("\nAll data had been sent\n");
-
-    const char *end_signal = "END\n";
-    send(client_socket, end_signal, 3,0);
-
     fclose(fd_file);
-    printf("[server] File sent complete\n");
+    printf("[server] All data has been sent\n");
+
+    // Send a separate confirmation message after file transfer
+    const char *end_message = "[server] Download completed\n";
+    send(client_socket, end_message, strlen(end_message), 0);
+    printf("[server] File sent successfully\n");
 }
+
+
 
 void client_handler(int client_socket, int id)
 {
@@ -292,7 +295,7 @@ void client_handler(int client_socket, int id)
     }
 
     decrypt(acc.password);
-    
+
     if (account_verify(acc.username, acc.password))
     {
         send(client_socket, "[server] Account found! Connected!", strlen("[server] Account found! Connected!"), 0);
@@ -301,9 +304,9 @@ void client_handler(int client_socket, int id)
     }
     else
         send(client_socket, "[server] Failed to connect! Account not found!", strlen("[server] Failed to connect! Account not found!"), 0);
-    
+
     while (connected)
-    {   
+    {
         memset(buff, 0, BUFF_SIZE);
         int bytes_recieved = recv(client_socket, buff, BUFF_SIZE - 1, 0);
         buff[bytes_recieved] = '\0';
@@ -360,7 +363,7 @@ void client_handler(int client_socket, int id)
                 " > currentdir :\n"
                 "    - Displays the path to the current directory.\n"
                 " > list :\n"
-                "    - Similar to 'ls' command, list the files in the current directory.\n" 
+                "    - Similar to 'ls' command, list the files in the current directory.\n"
                 " > cd <directory_name> :\n"
                 "    - Changes the current directory to <directory_name> directory.\n"
                 " > mkdir <dir_name> :\n"
@@ -378,7 +381,6 @@ void client_handler(int client_socket, int id)
             send(client_socket, help, strlen(help), 0);
         }
 
-       
         else if (strncmp(command, "cd", 2) == 0)
         {
             char new_location[BUFF_SIZE];
@@ -433,28 +435,29 @@ void client_handler(int client_socket, int id)
             }
             closedir(dir);
             send(client_socket, output, sizeof(output), 0);
-            
         }
-         else if (strncmp(command, "upload", 6) == 0)
+        else if (strncmp(command, "upload", 6) == 0)
         {
             char name[BUFF_SIZE];
             sscanf(command + 7, "%s", name);
 
             send(client_socket, "[server] Ready to receive", strlen("[server] Ready to receive"), 0);
-            //printf("inainte de recieve_file\n");
+            // printf("inainte de recieve_file\n");
             recieve_file(name, client_socket);
-            //printf("dupa recieve_file\n");
+            // printf("dupa recieve_file\n");
             send(client_socket, "[server] File received", strlen("[server] File received"), 0);
         }
-        else if(strncmp(command,"download",8) == 0)
+        else if (strncmp(command, "download", 8) == 0)
         {
             char file_to_download[BUFF_SIZE];
             sscanf(command + 9, "%s", file_to_download);
             printf("[server] The client with ID:%d requested to download the file: %s", id, file_to_download);
             respond_to_download(file_to_download, client_socket);
-            
-            send(client_socket,"[server] Download completed",strlen("[server] Download completed"),0);
 
+            char bin[BUFF_SIZE];
+        }
+        else if(strncmp(command,"finish",6) == 0){
+            send(client_socket, "[server] The file you requested was successfully downloaded", strlen("[server] The file you requested was successfully downloaded"), 0);
         }
         else
             send(client_socket, "[server]Unknown command", strlen("[server]Unknown command"), 0);
