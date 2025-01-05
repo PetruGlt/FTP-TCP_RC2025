@@ -320,6 +320,7 @@ int main(int argc, char *argv[])
     {
         while (1)
         {
+            fflush(stdout);
             char buffer[BUFFSIZE];
             printf("Enter command: ");
             memset(buffer, 0, BUFFSIZE);
