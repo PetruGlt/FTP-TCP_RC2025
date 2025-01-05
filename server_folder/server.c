@@ -239,9 +239,11 @@ int account_verify(const char *username, const char *password)
 }
 
 // respond_to_download(file_to_download, client_socket);
-void respond_to_download(const char *file_name, int client_socket) {
+void respond_to_download(const char *file_name, int client_socket)
+{
     FILE *fd_file = fopen(file_name, "rb");
-    if (fd_file == NULL) {
+    if (fd_file == NULL)
+    {
         perror("Can't open the file_to_upload");
         const char *error_msg = "[server] Error: File not found\n";
         send(client_socket, error_msg, strlen(error_msg), 0);
@@ -250,7 +252,7 @@ void respond_to_download(const char *file_name, int client_socket) {
 
     fseek(fd_file, 0, SEEK_END);
     long file_size = ftell(fd_file); // Get file size
-    rewind(fd_file); // Reset cursor position
+    rewind(fd_file);                 // Reset cursor position
 
     // Send file size to the client
     send(client_socket, &file_size, sizeof(file_size), 0);
@@ -258,8 +260,10 @@ void respond_to_download(const char *file_name, int client_socket) {
     char buffer[BUFF_SIZE];
     int bytes_read;
 
-    while ((bytes_read = fread(buffer, 1, BUFF_SIZE, fd_file)) > 0) {
-        if (send(client_socket, buffer, bytes_read, 0) < 0) {
+    while ((bytes_read = fread(buffer, 1, BUFF_SIZE, fd_file)) > 0)
+    {
+        if (send(client_socket, buffer, bytes_read, 0) < 0)
+        {
             perror("[server] Error sending file data");
             fclose(fd_file);
             return;
@@ -270,12 +274,12 @@ void respond_to_download(const char *file_name, int client_socket) {
     printf("[server] All data has been sent\n");
 
     // Send a separate confirmation message after file transfer
-    const char *end_message = "[server] Download completed\n";
-    send(client_socket, end_message, strlen(end_message), 0);
+    // const char *end_message = "[server] Download completed\n";
+    // send(client_socket, end_message, strlen(end_message), 0);
     printf("[server] File sent successfully\n");
+    char bin[BUFF_SIZE];
+    int n = recv(client_socket, bin, sizeof(bin), 0);
 }
-
-
 
 void client_handler(int client_socket, int id)
 {
@@ -453,10 +457,12 @@ void client_handler(int client_socket, int id)
             sscanf(command + 9, "%s", file_to_download);
             printf("[server] The client with ID:%d requested to download the file: %s", id, file_to_download);
             respond_to_download(file_to_download, client_socket);
+            send(client_socket, "[server] The file you requested was successfully downloaded", strlen("[server] The file you requested was successfully downloaded"), 0);
 
             char bin[BUFF_SIZE];
         }
-        else if(strncmp(command,"finish",6) == 0){
+        else if (strncmp(command, "finish", 6) == 0)
+        {
             send(client_socket, "[server] The file you requested was successfully downloaded", strlen("[server] The file you requested was successfully downloaded"), 0);
         }
         else
