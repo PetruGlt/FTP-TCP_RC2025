@@ -13,20 +13,22 @@
 
 #define BUFFSIZE 1024
 
-struct account
-{
+extern int errno;
+
+struct account{
+
     char username[100];
     char password[100];
 };
 
-void encrypt(char pass[100])
-{
+void encrypt(char pass[100]){
+
     char a;
     int i = 0;
     int n = strlen(pass);
 
-    while (i < n)
-    {
+    while (i < n){
+    
         switch (pass[i])
         {
         case 'a':
@@ -156,13 +158,13 @@ void encrypt(char pass[100])
     }
 }
 
-void connect_account(int server_socket)
-{
+void connect_account(int server_socket){
 
     struct account acc;
     char c;
     int i = 0;
     printf("\n[server] Username: ");
+
     fgets(acc.username, sizeof(acc.username), stdin);
     acc.username[strcspn(acc.username, "\n")] = 0;
 
@@ -170,16 +172,16 @@ void connect_account(int server_socket)
 
     fgets(acc.password, sizeof(acc.password), stdin);
     acc.password[strcspn(acc.password, "\n")] = 0;
+    
     encrypt(acc.password);
     send(server_socket, &acc, sizeof(acc), 0);
 };
 
-void upload(const char *file_to_upload, const char *location, int server_socket)
-{
+void upload(const char *file_to_upload, const char *location, int server_socket){
 
     FILE *fd_file = fopen(file_to_upload, "rb");
-    if (fd_file == NULL)
-    {
+    if (fd_file == NULL){
+
         perror("Can't open the file_to_upload");
         return;
     }
@@ -193,40 +195,40 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     
     int bytes_read;
     char buffer[BUFFSIZE];
+    
     // trimit
     while ((bytes_read = fread(buffer, 1, BUFFSIZE, fd_file)) > 0)
-    {
-        if (send(server_socket, buffer, bytes_read, 0) < 0)
-        {
+        if (send(server_socket, buffer, bytes_read, 0) < 0){
+
             perror("Error sending bytes to server");
             fclose(fd_file);
             return;
         }
-    }
 
     printf("\nData sent\n");
     // trimit END dupa ce am terminat
-    const char *end_signal = "END\n"; // Adăugați o linie nouă sau terminator
+    const char *end_signal = "END";
     send(server_socket, end_signal, 3, 0);
     
     fclose(fd_file);
     printf("File uploaded completed!\n");
 }
+
 void download(const char *name, int server_socket) {
     FILE *fd = fopen(name, "wb");
     if (fd == NULL) {
-        perror("[client] Error creating the file");
+        perror("Error creating the file");
         return;
     }
 
     long file_size;
     if (recv(server_socket, &file_size, sizeof(file_size), 0) <= 0) {
-        perror("[client] Error receiving file size");
+        perror("Error receiving file size");
         fclose(fd);
         return;
     }
 
-    printf("[client] File size to receive: %ld bytes\n", file_size);
+    printf("[client] File size: %ld bytes.\n", file_size);
 
     long total_received = 0;
     char buffer[BUFFSIZE];
@@ -235,20 +237,19 @@ void download(const char *name, int server_socket) {
     while (total_received < file_size) {
         bytes_read = recv(server_socket, buffer, BUFFSIZE, 0);
         if (bytes_read <= 0) {
-            perror("[client] Error receiving file data");
+            perror("Error receiving file data");
             fclose(fd);
             return;
         }
 
         long bytes_to_write = bytes_read;
 
-        // If receiving more than the remaining file size, adjust
         if (total_received + bytes_read > file_size) {
             bytes_to_write = file_size - total_received;
         }
 
         if (fwrite(buffer, 1, bytes_to_write, fd) != bytes_to_write) {
-            perror("[client] Error writing to file");
+            perror("Error writing to file");
             fclose(fd);
             return;
         }
@@ -256,34 +257,21 @@ void download(const char *name, int server_socket) {
         total_received += bytes_to_write;
     }
 
-    printf("[client] File download completed (%ld/%ld bytes)\n", total_received, file_size);
+    printf("[client] Download completed -- %ld/%ld bytes recieved)\n", total_received, file_size);
     fclose(fd);
-
-    // // Receive and print the server's final message
-    // char end_message[BUFFSIZE];
-    // int n = recv(server_socket, end_message, BUFFSIZE, 0);
-    // if (n > 0) {
-    //     end_message[n] = '\0';
-    //     printf("[client] Server: %s", end_message);
-    // }
 }
-
-
-
-
-extern int errno;
 
 int port;
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
+
     int server_socket;
     struct sockaddr_in server;
     struct account acc;
     char buff[BUFFSIZE];
 
-    if (argc != 3)
-    {
+    if (argc != 3){
+
         printf("Usage: %s <server_adress> <port>\n", argv[0]);
         return -1;
     }
@@ -320,7 +308,6 @@ int main(int argc, char *argv[])
     {
         while (1)
         {
-            fflush(stdout);
             char buffer[BUFFSIZE];
             printf("Enter command: ");
             memset(buffer, 0, BUFFSIZE);
@@ -400,12 +387,11 @@ int main(int argc, char *argv[])
         
             else if (send(server_socket, buffer, strlen(buffer), 0) < 0)
             {
-                perror("[client] Error sending the command");
+                perror(" Error sending the command");
                 break;
             }
 
-       
-            int n = recv(server_socket, buffer, BUFFSIZE, 0); // File received msg from [server]
+            int n = recv(server_socket, buffer, BUFFSIZE, 0); 
            
             buffer[n] = '\0';
             printf("%s", buffer);
@@ -417,5 +403,3 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// /home/petru10/SiteOS.sh - merge
-// /home/petru10/RC_PROJECT/test-upload/specificatie.pdf nu merge
