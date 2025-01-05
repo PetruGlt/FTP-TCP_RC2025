@@ -195,7 +195,7 @@ void recieve_file(const char *name, int client_socket){
     // dimensiunea fisierului
     long file_size;
     recv(client_socket, &file_size, sizeof(file_size), 0);
-    printf("%ld", file_size);
+
     long total_received = 0;
 
     int bytes_read;
