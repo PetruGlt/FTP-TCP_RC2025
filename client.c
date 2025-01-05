@@ -15,20 +15,25 @@
 
 extern int errno;
 
-struct account{
+struct account
+{
 
     char username[100];
     char password[100];
 };
 
-void encrypt(char pass[100]){
+struct account copy;
+
+void encrypt(char pass[100])
+{
 
     char a;
     int i = 0;
     int n = strlen(pass);
 
-    while (i < n){
-    
+    while (i < n)
+    {
+
         switch (pass[i])
         {
         case 'a':
@@ -158,7 +163,8 @@ void encrypt(char pass[100]){
     }
 }
 
-void connect_account(int server_socket){
+void connect_account(int server_socket)
+{
 
     struct account acc;
     char c;
@@ -172,15 +178,18 @@ void connect_account(int server_socket){
 
     fgets(acc.password, sizeof(acc.password), stdin);
     acc.password[strcspn(acc.password, "\n")] = 0;
-    
+
+    strcpy(copy.username, acc.username);
     encrypt(acc.password);
     send(server_socket, &acc, sizeof(acc), 0);
 };
 
-void upload(const char *file_to_upload, const char *location, int server_socket){
+void upload(const char *file_to_upload, const char *location, int server_socket)
+{
 
     FILE *fd_file = fopen(file_to_upload, "rb");
-    if (fd_file == NULL){
+    if (fd_file == NULL)
+    {
 
         perror("Can't open the file_to_upload");
         return;
@@ -188,17 +197,18 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
 
     // Obtinem dim. fisierului
     fseek(fd_file, 0, SEEK_END);
-    long file_size = ftell(fd_file); //pozitia cursorului
-    rewind(fd_file);// reseteaza pozitita cursorului
+    long file_size = ftell(fd_file); // pozitia cursorului
+    rewind(fd_file);                 // reseteaza pozitita cursorului
 
     send(server_socket, &file_size, sizeof(file_size), 0);
-    
+
     int bytes_read;
     char buffer[BUFFSIZE];
-    
+
     // trimit
     while ((bytes_read = fread(buffer, 1, BUFFSIZE, fd_file)) > 0)
-        if (send(server_socket, buffer, bytes_read, 0) < 0){
+        if (send(server_socket, buffer, bytes_read, 0) < 0)
+        {
 
             perror("Error sending bytes to server");
             fclose(fd_file);
@@ -209,20 +219,23 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     // trimit END dupa ce am terminat
     const char *end_signal = "END";
     send(server_socket, end_signal, 3, 0);
-    
+
     fclose(fd_file);
     printf("File uploaded completed!\n");
 }
 
-void download(const char *name, int server_socket) {
+void download(const char *name, int server_socket)
+{
     FILE *fd = fopen(name, "wb");
-    if (fd == NULL) {
+    if (fd == NULL)
+    {
         perror("Error creating the file");
         return;
     }
 
     long file_size;
-    if (recv(server_socket, &file_size, sizeof(file_size), 0) <= 0) {
+    if (recv(server_socket, &file_size, sizeof(file_size), 0) <= 0)
+    {
         perror("Error receiving file size");
         fclose(fd);
         return;
@@ -234,9 +247,11 @@ void download(const char *name, int server_socket) {
     char buffer[BUFFSIZE];
     int bytes_read;
 
-    while (total_received < file_size) {
+    while (total_received < file_size)
+    {
         bytes_read = recv(server_socket, buffer, BUFFSIZE, 0);
-        if (bytes_read <= 0) {
+        if (bytes_read <= 0)
+        {
             perror("Error receiving file data");
             fclose(fd);
             return;
@@ -244,11 +259,13 @@ void download(const char *name, int server_socket) {
 
         long bytes_to_write = bytes_read;
 
-        if (total_received + bytes_read > file_size) {
+        if (total_received + bytes_read > file_size)
+        {
             bytes_to_write = file_size - total_received;
         }
 
-        if (fwrite(buffer, 1, bytes_to_write, fd) != bytes_to_write) {
+        if (fwrite(buffer, 1, bytes_to_write, fd) != bytes_to_write)
+        {
             perror("Error writing to file");
             fclose(fd);
             return;
@@ -263,14 +280,15 @@ void download(const char *name, int server_socket) {
 
 int port;
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 
     int server_socket;
     struct sockaddr_in server;
-    struct account acc;
     char buff[BUFFSIZE];
 
-    if (argc != 3){
+    if (argc != 3)
+    {
 
         printf("Usage: %s <server_adress> <port>\n", argv[0]);
         return -1;
@@ -293,7 +311,7 @@ int main(int argc, char *argv[]){
         perror("Error command connect().\n");
         return errno;
     }
-
+   
     connect_account(server_socket);
 
     char status_account[BUFFSIZE];
@@ -305,7 +323,13 @@ int main(int argc, char *argv[]){
         printf("%s\n", status_account);
     }
     if (strcmp(status_account, "[server] Account found! Connected!") == 0)
-    {
+    {   
+        char dir[BUFFSIZE]="/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025";
+
+        if(chdir(copy.username) !=0){
+            perror("Can't change dir");
+        }
+
         while (1)
         {
             char buffer[BUFFSIZE];
@@ -343,56 +367,73 @@ int main(int argc, char *argv[]){
                 char ready[BUFFSIZE];
                 send(server_socket, info_server, strlen(info_server), 0);
                 //
+                if (strncmp(location, "server", 6) != 0 && strncmp(location, "client", 6) != 0 && strncmp(location, "whitelist", 9) != 0)
+                {
+                    // primesc ready
+                    recv(server_socket, ready, sizeof(ready), 0);
+                    upload(file_to_upload, location, server_socket);
+                    // printf("Am iesit\n"); //
+                }
+                else
+                {
+                    printf("\nYou are not allowed to do that.\n");
 
-                // primesc ready
-                recv(server_socket, ready, sizeof(ready), 0);
-                upload(file_to_upload, location, server_socket);
-                // printf("Am iesit\n"); //
+                    continue;
+                }
             }
-            else if (strncmp(buffer, "download", 8) == 0){
-                char* path = strtok(buffer, " ");
+            else if (strncmp(buffer, "download", 8) == 0)
+            {
+                char *path = strtok(buffer, " ");
                 char file_to_download[BUFFSIZE];
                 char new_file_name[BUFFSIZE];
-                
-                if(path !=NULL)
-                    strcpy(file_to_download, path);
-                else
-                    perror("invalid command");
-                
 
-                path = strtok(NULL," ");
-
-                if(path != NULL)
+                if (path != NULL)
                     strcpy(file_to_download, path);
                 else
                     perror("invalid command");
 
-                path = strtok(NULL," ");
+                path = strtok(NULL, " ");
 
-                if(path != NULL)
+                if (path != NULL)
+                    strcpy(file_to_download, path);
+                else
+                    perror("invalid command");
+
+                path = strtok(NULL, " ");
+
+                if (path != NULL)
                     strcpy(new_file_name, path);
                 else
                     perror("invalid command");
-                
-                char command_argument[BUFFSIZE] = "download ";
-                strcat(command_argument, file_to_download);
-                send(server_socket, command_argument,strlen(command_argument), 0);
 
-                printf("\nDownloading..\n");
-                download(new_file_name, server_socket);
-                printf("I'm out\n");
-                send(server_socket, "finish", strlen("finish"),0);
-                 
+                char command_argument[BUFFSIZE] = "download ";
+                // printf("\n%s\n", file_to_download);
+                strcat(command_argument, file_to_download);
+                send(server_socket, command_argument, strlen(command_argument), 0);
+                if (strncmp(file_to_download, "server", 6) != 0 && strncmp(file_to_download, "client", 6) != 0 && strncmp(file_to_download, "whitelist", 9) != 0)
+                {
+
+                    printf("\nDownloading..\n");
+                    download(new_file_name, server_socket);
+                    // printf("I'm out\n");
+                    send(server_socket, "finish", strlen("finish"), 0);
+                }
+                else
+                {
+                    printf("\nYou are not allowed to do that.\n");
+
+                    continue;
+                }
             }
-        
+
             else if (send(server_socket, buffer, strlen(buffer), 0) < 0)
             {
                 perror(" Error sending the command");
                 break;
             }
 
-            int n = recv(server_socket, buffer, BUFFSIZE, 0); 
-           
+            int n = recv(server_socket, buffer, BUFFSIZE, 0);
+
             buffer[n] = '\0';
             printf("%s", buffer);
             printf("\n\n");
@@ -402,4 +443,3 @@ int main(int argc, char *argv[]){
     close(server_socket);
     return 0;
 }
-
