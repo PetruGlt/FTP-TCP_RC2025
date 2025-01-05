@@ -24,6 +24,29 @@ struct account
 
 struct account copy;
 
+void create_account(){
+
+    struct account acc;
+    
+    printf("\n[server] Username: ");
+
+    fgets(acc.username, sizeof(acc.username), stdin);
+    acc.username[strcspn(acc.username, "\n")] = 0;
+
+    printf("\n[server] Password: ");
+
+    fgets(acc.password, sizeof(acc.password), stdin);
+    acc.password[strcspn(acc.password, "\n")] = 0;
+
+    FILE *fd = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt","a");
+    char text[BUFFSIZE]="\n";
+
+    snprintf(text, sizeof(text), "\n%s %s", acc.username, acc.password);
+    fwrite(text,sizeof(char),strlen(text),fd);
+    fclose(fd);
+
+}
+
 void encrypt(char pass[100])
 {
 
@@ -339,7 +362,12 @@ int main(int argc, char *argv[])
 
             buffer[strcspn(buffer, "\n")] = '\0';
 
-            if (strncmp(buffer, "upload", 6) == 0)
+            if(strcmp(copy.username,"admin")==0 && strncmp(buffer,"create_account",14)==0){
+                create_account();
+                printf("\n Account created\n");
+                continue;
+            }
+            else if (strncmp(buffer, "upload", 6) == 0)
             {
                 char *path = strtok(buffer, " ");
                 char file_to_upload[BUFFSIZE];
