@@ -24,6 +24,56 @@ struct account
 
 struct account copy;
 
+void create_account(){
+
+    struct account acc;
+    
+    printf("\n[server] Username: ");
+
+    fgets(acc.username, sizeof(acc.username), stdin);
+    acc.username[strcspn(acc.username, "\n")] = 0;
+
+    printf("\n[server] Password: ");
+
+    fgets(acc.password, sizeof(acc.password), stdin);
+    acc.password[strcspn(acc.password, "\n")] = 0;
+
+    FILE *fd = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt","a");
+    char text[BUFFSIZE]="\n";
+
+    snprintf(text, sizeof(text), "\n%s %s", acc.username, acc.password);
+    fwrite(text,sizeof(char),strlen(text),fd);
+    fclose(fd);
+
+}
+
+void delete_account(char *username){
+    FILE *fd_whitelist = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt","rb");
+
+    FILE *fd_temp = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/temp.txt","wb");
+
+    int found=0;
+
+    struct account acc;
+
+    while(fscanf(fd_whitelist, "%s %s", acc.username, acc.password) != EOF)
+        if(strcmp(acc.username,username) != 0)
+            fprintf(fd_temp, "%s %s\n", acc.username, acc.password);
+        else
+            found = 1;
+    if(found)
+        printf("\n The account with the username: %s was deleted",username);
+    else
+        printf("\n%s is not whitelisted\n", username);
+    
+    fclose(fd_whitelist);
+    fclose(fd_temp);
+
+    remove("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt");
+    rename("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/temp.txt","/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt");
+
+}
+
 void encrypt(char pass[100])
 {
 
@@ -339,7 +389,27 @@ int main(int argc, char *argv[])
 
             buffer[strcspn(buffer, "\n")] = '\0';
 
-            if (strncmp(buffer, "upload", 6) == 0)
+            if(strcmp(copy.username,"admin")==0 && strncmp(buffer,"create_account",14)==0){
+                create_account();
+                printf("\n Account created\n");
+                continue;
+            }
+            else if(strcmp(copy.username,"admin")==0 && strncmp(buffer,"delete_account",14)==0){
+                char *command_line = strtok(buffer, " ");
+                char username[BUFFSIZE];
+
+
+                command_line = strtok(NULL, " ");
+
+                if (command_line != NULL)
+                    strcpy(username, command_line);
+                else
+                    perror("invalid command");
+                delete_account(username);
+                printf("\n Account deleted\n");
+                continue;
+            }
+            else if (strncmp(buffer, "upload", 6) == 0)
             {
                 char *path = strtok(buffer, " ");
                 char file_to_upload[BUFFSIZE];
