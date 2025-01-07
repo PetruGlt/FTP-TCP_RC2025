@@ -1,83 +1,114 @@
-MyFileTransfer
-Autor
+# MyFileTransfer
+**Autor:** Galateanu Petru-Ioan  
+**Facultatea de Informatica, Universitatea "Alexandru Ioan Cuza" din Iasi**  
 
-Galateanu Petru-Ioan
-Facultatea de Informatică, Universitatea "Alexandru Ioan Cuza" din Iași
-Descriere
-
+## Abstract
 Această documentație descrie implementarea unui server FTP scris în limbajul C utilizând protocolul TCP. Proiectul include autentificare utilizatori, transfer de fișiere și alte funcționalități de bază ale unui server FTP.
-Cuprins
 
-    Introducere
-    Tehnologii aplicate
-    Structura aplicației
-    Aspecte de implementare
-    Concluzii
+## Cuprins
+- [Introducere](#Introducere)
+- [Tehnologii aplicate](#Tehnologii-aplicate)
+- [Structura aplicatiei](#Structura-aplicatiei)
+- [Aspecte de implementare](#Aspecte-de-implementare)
+- [Concluzii](#Concluzii)
 
-Introducere
+## Introducere
 
-Proiectul își propune să implementeze un server FTP simplu care utilizează protocolul TCP pentru transferul fișierelor între client și server într-un mod eficient și securizat. Serverul va permite autentificarea utilizatorilor, manipularea fișierelor și gestionarea directoarelor.
-Tehnologii aplicate
-Networking (TCP/IP)
+- Proiectul de față își propune să implementeze un server FTP simplu, care utilizează protocolul TCP pentru a facilita transferul fișierelor între client și server într-un mod eficient și securizat. FTP (File Transfer Protocol) este un protocol standard de rețea utilizat pentru transferul fișierelor între un client și un server, fiind folosit frecvent în aplicațiile de administrare a serverelor și în procesul de partajare a fișierelor.
 
-    Sistem de socket-uri:
-        Funcțiile socket(), bind(), listen(), accept() sunt utilizate pentru a crea și gestiona conexiunile de rețea.
-        Funcțiile send() și recv() trimit și primesc date între server și client.
-    Protocol TCP: Serverul utilizează protocolul TCP, care asigură o comunicare fiabilă și orientată pe conexiune.
+- Scopul principal al acestui proiect este de a crea o aplicație client-server bazată pe tehnologiile de programare C și socket programming, care va permite utilizatorilor să se autentifice pe server, să încarce și să descarce fișiere, și să gestioneze directoare.
 
-Procesare concurentă
+- Proiectul va include funcționalități de bază, precum autentificarea utilizatorilor pe baza unui fișier de tip whitelist, manipularea fișierelor de pe server (upload, download, ștergere, redenumire), precum și protecția împotriva accesului neautorizat.
 
-    Crearea proceselor cu fork(): Serverul folosește funcția fork() pentru a crea un proces nou pentru fiecare client.
+## Tehnologii aplicate
 
-Manipulare fișiere
+### Networking (TCP/IP)
+- **Sistem de socket-uri:**
+  - Funcțiile `socket()`, `bind()`, `listen()`, `accept()` sunt utilizate pentru a crea și gestiona conexiunile de rețea.
+  - Funcțiile `send()` și `recv()` trimit și primesc date între server și client.
 
-    Funcțiile fopen(), fwrite(), fread(), remove() și rename() sunt utilizate pentru manipularea fișierelor.
+- **Protocol TCP:** Serverul utilizează protocolul TCP, care asigură comunicare fiabilă, orientată pe conexiune.
 
-Securitate de bază
+### Procesare concurentă
+- **Crearea proceselor cu `fork()`:**
+  - Serverul folosește funcția `fork()` pentru a crea un proces nou pentru fiecare client.
 
-    White-listing pentru autentificare: Serverul validează utilizatorii pe baza unui fișier whitelist.txt, iar parolele sunt criptate și decriptate cu o funcție manuală.
+- **Managementul proceselor:** Procesul părinte continuă să accepte conexiuni, iar procesul copil gestionează fiecare client.
 
-Manipularea directoarelor
+### Manipulare fișiere
+- **I/O pentru fișiere:** Serverul implementează funcții pentru:
+  - *Upload:* Funcția `recieve_file()` salvează fișiere primite de la client.
+  - *Download:* Funcția `respond_to_download()` trimite fișiere clientului.
 
-    Funcțiile mkdir(), chdir() și getcwd() sunt folosite pentru manipularea și navigarea între directoare.
+- **Funcții POSIX:** Utilizarea funcțiilor precum `fopen()`, `fwrite()`, `fread()`, `remove()` și `rename()` pentru manipularea fișierelor.
+- **Directorul curent:** Comenzi precum `chdir()` și `getcwd()` sunt utilizate pentru a schimba și a afișa directorul curent.
 
-Structuri de date și criptare custom
+### Securitate de bază
+- **White-listing pentru autentificare:**
+  - Serverul verifică dacă un utilizator este autorizat comparând datele din fișierul `whitelist.txt`.
+  - Parolele sunt criptate și decriptate cu o funcție manuală (`decrypt()`).
 
-    Utilizarea unei structuri account pentru stocarea informațiilor despre utilizatori și criptarea parolelor folosind un algoritm simplu de substituție.
+- **Restricții:** Nu permite manipularea fișierelor critice (`server`, `client`, `whitelist`).
 
-Structura aplicației
-Diagrama
+### Manipularea directoarelor
+- **Crearea directoarelor:** Funcția `mkdir()` creează noi directoare.
+- **Listarea fișierelor:** Utilizarea `opendir()` și `readdir()` pentru a afișa fișierele dintr-un director.
 
-Diagrama proiectului
-Prezentarea componentelor principale ale diagramei
+### Structuri de date și criptare custom
+- **Structura `account`:** Stochează informații despre utilizator (nume și parolă).
+- **Decriptare custom:** Algoritm simplu care mapează caractere criptate la cele originale.
 
-    Client: Trimite datele de autentificare criptate și primește răspunsurile de la server.
-    Server: Verifică datele de autentificare și gestionează comenzile trimise de client.
+### Managementul erorilor
+- Funcția `perror()` este utilizată pentru afișarea mesajelor de eroare.
 
-Aspecte de implementare
-Arhitectura generală
+### Comunicare între server și client
+- Implementarea comenzilor `mkdir`, `rename`, `delete`, `list`, `upload`, `download`, `help`.
 
+### Proiectare modulară
+- Funcțiile sunt separate pentru a gestiona fiecare funcționalitate (`client_handler()`, `recieve_file()`, `account_verify()` etc.).
+
+### Utilizarea bibliotecilor POSIX
+- Biblioteci precum `sys/socket.h`, `netinet/in.h`, `unistd.h`, `dirent.h` sunt utilizate pentru rețea, procese și manipularea directoarelor.
+
+## Structura aplicației
+
+### Diagrama
+
+![Diagrama](diagramaproiect.drawio.png)
+
+### Prezentarea componentelor principale ale diagramei
+
+- **Client:**
+  - Primește de la tastatură datele introduse de utilizator (`username`, `parola`) și le criptează.
+  - Trimite către server datele criptate.
+  - Dacă primește de la server mesajul specific pentru o conectare reușită, accesează folderul cu numele `username` și primește comenzi de la utilizator.
+  - Trimite serverului comenzile.
+
+- **Server:**
+  - Verifică datele de conectare folosind fișierul `whitelist.txt`.
+  - Dacă datele de conectare sunt corecte, creează un folder cu numele utilizatorului care s-a conectat.
+  - Primește comenzi de la client.
+  - Gestionează comenzile clientului.
+
+## Aspecte de implementare
+
+### Arhitectura generală
 Aplicația are o arhitectură client-server, utilizând protocolul TCP/IP.
-Autentificare
 
-Serverul decriptează parola primită de la client și validează utilizatorii folosind fișierul whitelist.txt.
-Operațiuni gestionate de server
+### Autentificare
+- Serverul decriptează parola primită de la client și validează utilizatorii folosind un fișier `whitelist.txt` care conține perechi de forma: `username parola`.
 
-    Comanda help (help): Oferă informații utilizatorului referitor la comenzile disponibile.
-    Operații pe directoare:
-        mkdir <nume>: Creează un director denumit nume.
-        cd <dir>: Schimbă directorul curent.
-        list: Afișează fișierele din directorul curent.
-    Operații pe fișiere:
-        rename <nume1> <nume2>: Redenumirea unui fișier.
-        delete <nume>: Șterge un fișier.
-        upload <path> <nume>: Încarcă un fișier pe server.
-        download <fisier>: Descarcă un fișier de pe server.
+- Administratorul serverului este singurul utilizator care după înregistrare poate crea sau șterge utilizatori. Conturile pe care acesta le creează sunt salvate în `whitelist.txt`.
 
-Concluzii
-Final
+#### Fluxul de autentificare:
+1. Clientul trimite numele de utilizator și parola codificată către server.
+2. Serverul decodifică parola primită și o compară cu valorile stocate în `whitelist.txt`.
+3. Dacă combinația `username parola` este validă, clientul este conectat și poate trimite comenzi.
 
-În cadrul acestui proiect, am implementat un server FTP simplu, utilizând protocolul TCP, pentru a demonstra aplicarea principiilor fundamentale ale rețelelor de calculatoare, a protocoalelor de comunicație și a tehnologiilor de securitate.
-Potențiale îmbunătățiri
+## Concluzii
 
-    Implementarea unui sistem de logare și monitorizare, care să înregistreze toate operațiunile și încercările de autentificare într-un fișier log pentru detectarea potențialelor atacuri.
+### Final
+- În cadrul acestui proiect, am implementat un server FTP simplu, utilizând protocolul TCP, pentru a demonstra aplicarea principiilor fundamentale ale rețelelor de calculatoare, a protocoalelor de comunicație și a tehnologiilor de securitate.
+
+### Potențiale îmbunătățiri
+- **Sistem de logare și monitorizare:** Presupune înregistrarea tuturor operațiunilor efectuate pe server pentru o mai bună monitorizare și depanare.
