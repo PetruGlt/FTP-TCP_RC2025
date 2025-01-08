@@ -1,14 +1,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <netdb.h>
 #include <string.h>
-#include <termios.h>
 #include <fcntl.h>
 
 #define BUFFSIZE 1024
@@ -17,7 +13,6 @@ extern int errno;
 
 struct account
 {
-
     char username[100];
     char password[100];
 };
@@ -52,7 +47,7 @@ void delete_account(char *username){
 
     FILE *fd_temp = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/temp.txt","wb");
 
-    int found=0;
+    int found = 0;
 
     struct account acc;
 
@@ -61,6 +56,7 @@ void delete_account(char *username){
             fprintf(fd_temp, "%s %s\n", acc.username, acc.password);
         else
             found = 1;
+  
     if(found)
         printf("\n The account with the username: %s was deleted",username);
     else
@@ -76,14 +72,11 @@ void delete_account(char *username){
 
 void encrypt(char pass[100])
 {
-
-    char a;
     int i = 0;
     int n = strlen(pass);
 
     while (i < n)
     {
-
         switch (pass[i])
         {
         case 'a':
@@ -215,10 +208,7 @@ void encrypt(char pass[100])
 
 void connect_account(int server_socket)
 {
-
     struct account acc;
-    char c;
-    int i = 0;
     printf("\n[server] Username: ");
 
     fgets(acc.username, sizeof(acc.username), stdin);
@@ -240,7 +230,6 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     FILE *fd_file = fopen(file_to_upload, "rb");
     if (fd_file == NULL)
     {
-
         perror("Can't open the file_to_upload");
         return;
     }
@@ -259,19 +248,19 @@ void upload(const char *file_to_upload, const char *location, int server_socket)
     while ((bytes_read = fread(buffer, 1, BUFFSIZE, fd_file)) > 0)
         if (send(server_socket, buffer, bytes_read, 0) < 0)
         {
-
             perror("Error sending bytes to server");
             fclose(fd_file);
             return;
         }
 
-    printf("\nData sent\n");
+    // printf("\nData sent\n"); //debug
+
     // trimit END dupa ce am terminat
     const char *end_signal = "END";
     send(server_socket, end_signal, 3, 0);
 
     fclose(fd_file);
-    printf("File uploaded completed!\n");
+    // printf("File uploaded completed!\n"); //debug
 }
 
 void download(const char *name, int server_socket)
@@ -339,7 +328,6 @@ int main(int argc, char *argv[])
 
     if (argc != 3)
     {
-
         printf("Usage: %s <server_adress> <port>\n", argv[0]);
         return -1;
     }
@@ -372,6 +360,7 @@ int main(int argc, char *argv[])
         status_account[n] = '\0';
         printf("%s\n", status_account);
     }
+
     if (strcmp(status_account, "[server] Account found! Connected!") == 0)
     {   
         char dir[BUFFSIZE]="/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025";
@@ -398,15 +387,16 @@ int main(int argc, char *argv[])
                 char *command_line = strtok(buffer, " ");
                 char username[BUFFSIZE];
 
-
                 command_line = strtok(NULL, " ");
 
                 if (command_line != NULL)
                     strcpy(username, command_line);
                 else
                     perror("invalid command");
+
                 delete_account(username);
                 printf("\n Account deleted\n");
+
                 continue;
             }
             else if (strncmp(buffer, "upload", 6) == 0)
@@ -421,7 +411,6 @@ int main(int argc, char *argv[])
                     strcpy(file_to_upload, path);
                 else
                     printf("invalid command");
-                //
 
                 // locatie
                 path = strtok(NULL, " ");
@@ -429,25 +418,24 @@ int main(int argc, char *argv[])
                     strcpy(location, path);
                 else
                     printf("invalid command");
-                //
+                
 
                 // trimit la server "upload locatie"
                 char info_server[BUFFSIZE] = "upload ";
                 strcat(info_server, location);
                 char ready[BUFFSIZE];
                 send(server_socket, info_server, strlen(info_server), 0);
-                //
+                
                 if (strncmp(location, "server", 6) != 0 && strncmp(location, "client", 6) != 0 && strncmp(location, "whitelist", 9) != 0)
                 {
                     // primesc ready
                     recv(server_socket, ready, sizeof(ready), 0);
                     upload(file_to_upload, location, server_socket);
-                    // printf("Am iesit\n"); //
+                    // printf("Am iesit\n"); //debug
                 }
                 else
                 {
-                    printf("\nYou are not allowed to do that.\n");
-
+                    printf("\n[client] You are not allowed to do that.\n");
                     continue;
                 }
             }
@@ -477,20 +465,23 @@ int main(int argc, char *argv[])
                     perror("invalid command");
 
                 char command_argument[BUFFSIZE] = "download ";
-                // printf("\n%s\n", file_to_download);
+
+                // printf("\n%s\n", file_to_download); //debug 
+                
                 strcat(command_argument, file_to_download);
                 send(server_socket, command_argument, strlen(command_argument), 0);
+
                 if (strncmp(file_to_download, "server", 6) != 0 && strncmp(file_to_download, "client", 6) != 0 && strncmp(file_to_download, "whitelist", 9) != 0)
                 {
 
                     printf("\nDownloading..\n");
                     download(new_file_name, server_socket);
-                    // printf("I'm out\n");
+                    // printf("I'm out\n");//debug
                     send(server_socket, "finish", strlen("finish"), 0);
                 }
                 else
                 {
-                    printf("\nYou are not allowed to do that.\n");
+                    printf("\n[client ]You are not allowed to do that.\n");
 
                     continue;
                 }
