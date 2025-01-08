@@ -74,7 +74,7 @@ Această documentație descrie implementarea unui server FTP scris în limbajul 
 
 ### Diagrama
 
-![Diagrama](https://github.com/PetruGlt/FTP-TCP_RC2025/blob/main/schema.drawio.png)
+![Diagrama](https://github.com/PetruGlt/FTP-TCP_RC2025/blob/main/diagramaproiect.drawio.png)
 
 ### Prezentarea componentelor principale ale diagramei
 
