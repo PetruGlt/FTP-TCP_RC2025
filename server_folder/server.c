@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
