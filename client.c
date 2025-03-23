@@ -35,7 +35,7 @@ void create_account(){
     fgets(acc.password, sizeof(acc.password), stdin);
     acc.password[strcspn(acc.password, "\n")] = 0;
 
-    FILE *fd = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt","a");
+    FILE *fd = fopen("/server_folder/whitelist.txt","a");
     char text[BUFFSIZE]="\n";
 
     snprintf(text, sizeof(text), "\n%s %s", acc.username, acc.password);
@@ -45,9 +45,9 @@ void create_account(){
 }
 
 void delete_account(char *username){
-    FILE *fd_whitelist = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt","rb");
+    FILE *fd_whitelist = fopen("/server_folder/whitelist.txt","rb");
 
-    FILE *fd_temp = fopen("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/temp.txt","wb");
+    FILE *fd_temp = fopen("/server_folder/temp.txt","wb");
 
     int found = 0;
 
@@ -67,8 +67,8 @@ void delete_account(char *username){
     fclose(fd_whitelist);
     fclose(fd_temp);
 
-    remove("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt");
-    rename("/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/temp.txt","/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt");
+    remove("/server_folder/whitelist.txt");
+    rename("/server_folder/temp.txt","/home/petru10/RC_PROJECT/workspace/FTP-TCP_RC2025/server_folder/whitelist.txt");
 
 }
 
